@@ -1,7 +1,7 @@
 var express = require('express');
 var router = express.Router();
 var user = require('../models/user');
-// var crypto = require('crypto');
+var crypto = require('crypto');
 // var movie = require('../models/movie');
 // var mail = require('../models/mail');
 // var comment = require('../models/comment');
@@ -10,7 +10,30 @@ const init_token = 'TKL02o';
 /* GET users listing. */
 //用户登录接口
 router.post('/login', function (req, res, next) {
+//验证完整性，这里使用简单的if方式，可以使用正则表达式对输入的格式进行验证
+  if (!req.body.username) {
+    res.json({status: 1, message: "用户名为空"})
+  }
+  else if (!req.body.password) {
+    res.json({status: 1, message: "密码为空"})
+  }
+  else {
+    user.findUserLogin(req.body.username, req.body.password, function
+        (err, userSave) {
+      if (userSave.length != 0) {
+        //通过MD5查看密码
+        var token_after = getMD5Password(userSave[0]._id)
+        res.json({
+          status: 0, data: {token: token_after, user: userSave},
+          message: "用户登录成功"
+        })
+      } else {
+        res.json({status: 1, message: "用户名或者密码错误"})
+      }
+    })
+  }
 });
+
 //用户注册接口
 router.post('/register', function (req, res, next) {
 //验证完整性，这里使用简单的if方式，可以使用正则表达式对输入的格式进行验证
@@ -66,6 +89,9 @@ router.post('/sendEmail', function (req, res, next) {
 
 //获取MD5值
 function getMD5Password(id) {
+  var md5 = crypto.createHash('md5');
+  var token_before = id + init_token;
+  return md5.update(token_before).digest('hex');
 }
 
 module.exports = router;
